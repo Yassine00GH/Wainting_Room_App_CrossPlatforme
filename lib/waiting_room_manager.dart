@@ -1,13 +1,4 @@
-class WaitingRoomManager {
-  final List<String> _clients = [];
+export 'queue_provider.dart';
+import 'queue_provider.dart';
 
-  List<String> get clients => _clients;
-
-  void addClient(String name) {
-    _clients.add(name);
-  }
-
-  void removeClient(String name) {
-    _clients.remove(name);
-  }
-}
+typedef WaitingRoomManager = QueueProvider;
