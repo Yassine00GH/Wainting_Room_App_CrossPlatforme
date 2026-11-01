@@ -102,10 +102,19 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
     }
   }
 
+  bool _isQueueLive(QueueProvider queue) {
+    try {
+      return queue.isSupabaseConnected;
+    } catch (_) {
+      return widget.isSupabaseConfigured;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final queue = context.watch<QueueProvider>();
-    final isLive = queue.isSupabaseConnected;
+    final clients = queue.clients;
+    final isLive = _isQueueLive(queue);
 
     return Scaffold(
       appBar: AppBar(
@@ -136,7 +145,7 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
-                    'File Unique • Synchronisation Temps Réel',
+                    'Offline-First (SQLite) • GPS • Supabase',
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 11,
@@ -151,8 +160,21 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: 'Synchroniser avec Supabase',
+            icon: const Icon(
+              Icons.sync_rounded,
+              color: Color(0xFF4F46E5),
+              size: 22,
+            ),
+            onPressed: () => queue.syncNow(),
+          ),
+          IconButton(
             tooltip: 'GitHub Repository',
-            icon: const Icon(Icons.code_rounded, color: Color(0xFF0F172A), size: 22),
+            icon: const Icon(
+              Icons.code_rounded,
+              color: Color(0xFF0F172A),
+              size: 22,
+            ),
             onPressed: () {
               showDialog(
                 context: context,
@@ -168,7 +190,7 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Dépôt officiel du projet TP4 :'),
+                      const Text('Dépôt officiel du projet (TP4 & TP5) :'),
                       const SizedBox(height: 10),
                       SelectableText(
                         'https://github.com/Yassine00GH/Wainting_Room_App_CrossPlatforme',
@@ -197,7 +219,8 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
               color: isLive ? const Color(0xFFECFDF5) : const Color(0xFFEFF6FF),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isLive ? const Color(0xFFA7F3D0) : const Color(0xFFBFDBFE),
+                color:
+                    isLive ? const Color(0xFFA7F3D0) : const Color(0xFFBFDBFE),
               ),
             ),
             child: Row(
@@ -208,16 +231,20 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
                   height: 8,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isLive ? const Color(0xFF10B981) : const Color(0xFF3B82F6),
+                    color: isLive
+                        ? const Color(0xFF10B981)
+                        : const Color(0xFF3B82F6),
                   ),
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  isLive ? 'Supabase Live' : 'Mode Local / Démo',
+                  isLive ? 'Supabase Live' : 'SQLite Offline',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: isLive ? const Color(0xFF047857) : const Color(0xFF1D4ED8),
+                    color: isLive
+                        ? const Color(0xFF047857)
+                        : const Color(0xFF1D4ED8),
                   ),
                 ),
               ],
@@ -231,7 +258,7 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
             // Section Supérieure : Résumé / KPI style Figma
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: _buildMetricsHeader(queue),
+              child: _buildMetricsHeader(clients),
             ),
 
             // Formulaire d'ajout rapide (Pill input moderne)
@@ -249,7 +276,7 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
                   Row(
                     children: [
                       Text(
-                        'Clients in Queue: ${queue.clients.length}',
+                        'Clients in Queue: ${clients.length}',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -258,7 +285,7 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
                       ),
                     ],
                   ),
-                  if (queue.clients.isNotEmpty)
+                  if (clients.isNotEmpty)
                     Text(
                       'Ordre d\'arrivée (FIFO)',
                       style: TextStyle(
@@ -273,13 +300,13 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
 
             // Liste des clients ou Empty State
             Expanded(
-              child: queue.clients.isEmpty
+              child: clients.isEmpty
                   ? _buildEmptyState()
-                  : _buildClientsList(queue),
+                  : _buildClientsList(queue, clients),
             ),
 
             // Barre d'action inférieure (Appeler le suivant)
-            _buildBottomActionBar(queue),
+            _buildBottomActionBar(queue, clients),
           ],
         ),
       ),
@@ -287,9 +314,9 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
   }
 
   /// Carte des métriques d'accueil
-  Widget _buildMetricsHeader(QueueProvider queue) {
-    final nextPerson = queue.currentClient?.name ?? 'Aucun';
-    final count = queue.clients.length;
+  Widget _buildMetricsHeader(List<Map<String, dynamic>> clients) {
+    final nextPerson = clients.isNotEmpty ? clients.first.name : 'Aucun';
+    final count = clients.length;
 
     return Container(
       decoration: BoxDecoration(
@@ -467,14 +494,19 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
     );
   }
 
-  /// Liste dynamique des clients
-  Widget _buildClientsList(QueueProvider queue) {
+  /// Liste dynamique des clients (avec affichage de la géolocalisation Step 2.3)
+  Widget _buildClientsList(
+    QueueProvider queue,
+    List<Map<String, dynamic>> clients,
+  ) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: queue.clients.length,
+      itemCount: clients.length,
       itemBuilder: (context, index) {
-        final client = queue.clients[index];
+        final client = clients[index];
         final isNext = index == 0;
+        final lat = (client['lat'] as num?)?.toDouble();
+        final lng = (client['lng'] as num?)?.toDouble();
 
         return Container(
           margin: const EdgeInsets.only(bottom: 10),
@@ -487,14 +519,16 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
             ),
             boxShadow: [
               BoxShadow(
-                color: isNext ? const Color(0x144F46E5) : const Color(0x06000000),
+                color:
+                    isNext ? const Color(0x144F46E5) : const Color(0x06000000),
                 blurRadius: 10,
                 offset: const Offset(0, 3),
               ),
             ],
           ),
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             leading: Stack(
               clipBehavior: Clip.none,
               children: [
@@ -526,9 +560,12 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
                   top: -4,
                   left: -4,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: isNext ? const Color(0xFFF59E0B) : const Color(0xFF1E293B),
+                      color: isNext
+                          ? const Color(0xFFF59E0B)
+                          : const Color(0xFF1E293B),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -547,7 +584,7 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    client.name,
+                    client['name']?.toString() ?? 'Anonyme',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: isNext ? FontWeight.w700 : FontWeight.w600,
@@ -557,7 +594,8 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
                 ),
                 if (isNext)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFEF3C7),
                       borderRadius: BorderRadius.circular(10),
@@ -566,7 +604,11 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.star_rounded, size: 12, color: Color(0xFFD97706)),
+                        Icon(
+                          Icons.star_rounded,
+                          size: 12,
+                          color: Color(0xFFD97706),
+                        ),
                         SizedBox(width: 4),
                         Text(
                           'Prioritaire',
@@ -583,21 +625,36 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
             ),
             subtitle: Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.access_time_rounded,
-                    size: 13,
-                    color: Color(0xFF94A3B8),
-                  ),
-                  const SizedBox(width: 4),
                   Text(
-                    'Arrivé(e) à ${client.formattedTime}',
+                    lat == null
+                        ? '📍 Location not captured'
+                        : '📍 ${lat.toStringAsFixed(4)}, ${lng?.toStringAsFixed(4)}',
                     style: const TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF64748B),
-                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF475569),
+                      fontWeight: FontWeight.w500,
                     ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.access_time_rounded,
+                        size: 12,
+                        color: Color(0xFF94A3B8),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Arrivé(e) à ${client.formattedTime}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -665,9 +722,12 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
   }
 
   /// Barre d'action inférieure (Appel du prochain client)
-  Widget _buildBottomActionBar(QueueProvider queue) {
-    final hasClients = queue.clients.isNotEmpty;
-    final nextName = queue.currentClient?.name;
+  Widget _buildBottomActionBar(
+    QueueProvider queue,
+    List<Map<String, dynamic>> clients,
+  ) {
+    final hasClients = clients.isNotEmpty;
+    final nextName = hasClients ? clients.first.name : null;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),

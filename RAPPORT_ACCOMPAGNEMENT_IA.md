@@ -1,158 +1,128 @@
-# Journal de Bord & Rapport d'Apprentissage — TP Waiting Room App (Workshop 3)
+# Journal de Bord & Rapport d'Accompagnement IA — TP Waiting Room App (Workshop 5 / TP5)
 
 **Étudiant :** Yassine Ghorbel  
 **Projet :** Waiting Room App (Flutter / Dart)  
-**Objectif :** Migration vers `Provider`, méthodologie TDD et tests automatisés
+**TP :** Workshop 5 (TP5) — *Building Offline-First Queue App with Geolocation*  
+**Objectif :** Persistance locale SQLite (`sqflite`), synchronisation différée Supabase, géolocalisation GPS (`geolocator`) et tests TDD avec Mocks (`mockito` & `sqflite_common_ffi`)
 
 ---
 
-## 1. Ce qu'on devait faire dans ce TP
+## 1. Ce qu'on devait faire dans ce TP 5
 
-Pour ce Workshop 3, le but était d'améliorer l'application de salle d'attente. Dans les versions précédentes, on gérait tout localement dans la page avec `setState`.
+Au Workshop 4, notre application était connectée en temps réel à **Supabase**, mais elle dépendait d'une connexion Internet active pour enregistrer durablement les clients. Dans ce **Workshop 5**, l'objectif était de passer à une véritable architecture **Offline-First** enrichie par la géolocalisation :
 
-Le travail demandé consistait à :
-
-- Sortir la logique métier de l'interface en utilisant la bibliothèque **Provider** et la classe [ChangeNotifier](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/lib/queue_provider.dart#L3).
-- Appliquer rigoureusement la méthode **TDD** (_Test-Driven Development_) : écrire les tests en premier, voir qu'ils échouent, puis coder la solution minimale pour les faire passer.
-- Tester à la fois le code Dart pur (tests unitaires) et les composants graphiques (tests de widgets).
-- Garder un projet propre validé par l'intégration continue GitHub Actions.
+- Mettre en place une base de données locale **SQLite** avec [`LocalQueueService`](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/lib/local_queue_service.dart) (`sqflite`) pour que l'application fonctionne même en mode avion / sans Wi-Fi.
+- Générer des identifiants uniques côté client hors-ligne grâce au package **`uuid`** (`Uuid().v4()`).
+- Synchroniser automatiquement les clients non synchronisés (`is_synced = 0`) vers **Supabase** dès que la connexion est disponible via `_syncLocalToRemote()`.
+- Capturer la position GPS réelle de chaque client (`lat`, `lng`) via [`GeolocationService`](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/lib/geolocation_service.dart) (`geolocator`) et l'afficher dans [`WaitingRoomScreen`](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/lib/main.dart).
+- Appliquer le **TDD** avec une base SQLite en mémoire (`sqflite_common_ffi`) et des **Mocks** (`mockito` + `build_runner`) pour isoler le GPS et le Provider pendant les tests.
 
 ---
 
 ## 2. Ma démarche avec l'IA : Pourquoi et comment je l'ai utilisée
 
-Je ne voulais pas demander à l'IA d'écrire tout le projet à ma place : d'une part parce que je n'aurais rien appris, et d'autre part parce que je dois être capable d'expliquer chaque ligne à mon professeur.
+Pour ce TP 5 qui combine plusieurs concepts avancés (base locale SQLite, synchronisation cloud Supabase, capteurs matériels GPS et génération de Mocks), j'ai utilisé l'IA comme **tuteur technique et binôme d'architecture** :
 
-J'ai donc utilisé l'IA comme un **tuteur / binôme de code** :
-
-- **Pour comprendre le "pourquoi" :** Pourquoi adopter Provider alors que mon code précédent fonctionnait déjà ?
-- **Pour m'aider sur la méthode TDD :** Comment bien découper un test avant même d'avoir créé la fonction ?
-- **Pour m'expliquer mes erreurs de compilation et de tests :** Comprendre les messages d'erreur au lieu de tester au hasard jusqu'à ce que ça marche.
+- **Pour comprendre l'architecture Offline-First :** Comment éviter les conflits entre la base locale SQLite et la base distante Supabase ? Pourquoi utiliser `upsert` et un booléen/entier `is_synced` ?
+- **Pour maîtriser les tests isolés (TDD) :** Comment tester SQLite sur mon PC Windows sans lancer d'émulateur Android, et comment simuler une position GPS fixe dans un test unitaire avec `Mockito` ?
+- **Pour diagnostiquer les subtilités de Flutter :** Comprendre le rôle de `unawaited()`, la gestion des permissions Android/iOS et l'initialisation FFI dans les tests.
 
 ---
 
 ## 3. Nos échanges réels : Prompts & Réponses
 
-Voici les principaux échanges qui m'ont permis de comprendre et de réaliser ce TP :
+Voici les échanges clés qui m'ont permis de comprendre et de construire ce TP 5 étape par étape :
 
-### 💬 Échange 1 : Pourquoi passer à Provider ?
+### 💬 Échange 1 : Comprendre le pattern Offline-First (`SQLite` + `Supabase`)
 
 > **👤 Mon prompt :**  
-> _" Pour ce TP3, le prof nous demande de remplacer notre gestion d'état locale par Provider et ChangeNotifier. Franchement, mon code avec setState marchait déjà bien. C'est quoi le vrai intérêt de faire tout ce détour et de créer une classe à part ?"_
+> _"Dans ce TP5, on a à la fois SQLite en local et Supabase dans le cloud. Je ne comprends pas bien pourquoi on écrit d'abord dans SQLite quand on ajoute un client au lieu d'envoyer directement à Supabase et d'utiliser SQLite seulement si Internet est coupé ?"_
 
 > **🤖 Réponse de l'IA :**  
-> _"C'est une très bonne question, et c'est normal de se la poser au début ! Sur une petite page, `setState` semble plus rapide. Mais dès que le projet grossit, ça pose trois gros problèmes :_
-> _1. **Mélange des genres :** Tes boutons et ta liste sont mélangés avec la gestion de la file d'attente (ajouter, supprimer, vérifier la taille)._
-> _2. **Impossible de tester facilement :** Si tu veux tester que l'ajout d'un client fonctionne, tu es obligé de lancer l'interface graphique Flutter au lieu de faire un test unitaire Dart super rapide._
-> _3. **Partage des données :** Si demain tu as un deuxième écran qui veut juste afficher le nombre de personnes qui attendent, avec `setState` tu vas galérer à faire passer la variable._
+> _"C'est toute la différence entre un simple 'mode secours' et une vraie architecture **Offline-First** !_
+> _Si tu essaies d'appeler Supabase en premier quand le réseau est instable (par exemple dans une salle d'attente en sous-sol avec une mauvaise 4G), la requête HTTP peut mettre 10 à 30 secondes avant d'échouer en timeout. Pendant ce temps, l'interface de l'utilisateur fige ou affiche un chargement interminable._
 >
-> _Avec **`Provider`** :_
-> _- Tu crées une classe Dart pure [QueueProvider](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/lib/queue_provider.dart#L3-L23) qui contient la liste et les fonctions._
-> _- Quand la liste change, tu appelles `notifyListeners()`._
-> _- Ton écran [WaitingRoomScreen](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/lib/main.dart#L26-L100) devient un simple `StatelessWidget` qui affiche les données et réagit tout seul."_
+> _Avec le pattern **Offline-First** que tu implémentes dans [`QueueProvider`](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/lib/queue_provider.dart) :_
+> _1. **La source de vérité immédiate est locale :** Tu génères un `Uuid().v4()`, tu enregistres dans SQLite avec `is_synced = 0`, et tu mets à jour l'écran instantanément (en quelques millisecondes)._
+> _2. **La synchronisation est asynchrone et non-bloquante :** Tu lances `unawaited(_syncLocalToRemote())`. Si Internet marche, le client est envoyé sur Supabase via `upsert` et marqué `is_synced = 1`. Si Internet est coupé, l'utilisateur ne subit aucun blocage et ses données sont déjà en sécurité sur le disque SQLite !"_
 
 ---
 
-### 💬 Échange 2 : Comment appliquer le TDD sur `nextClient()` ?
+### 💬 Échange 2 : Tester SQLite en mémoire avec `sqflite_common_ffi` (TDD)
 
 > **👤 Mon prompt :**  
-> _"Je dois ajouter la méthode `nextClient()` pour faire passer le premier client de la file d'attente. Le prof insiste pour qu'on fasse du TDD. Concrètement, je commence par quoi ? Je fais le test d'abord même si la fonction n'existe pas encore ?"_
+> _"Quand je lance mon test unitaire `flutter test test/local_queue_service_test.dart` sur Windows, pourquoi on a besoin de `sqflite_common_ffi` et de `inMemory: true` ? Pourquoi `sqflite` normal ne marche pas directement dans `flutter test` ?"_
 
 > **🤖 Réponse de l'IA :**  
-> _"Oui, exactement ! C'est le principe du cycle **Red $\rightarrow$ Green $\rightarrow$ Refactor** :_
+> _"Le package `sqflite` classique communique avec le moteur SQLite natif d'Android (Java/Kotlin) ou d'iOS (Swift/Objective-C) via les `MethodChannel` de Flutter. Or, quand tu lances `flutter test`, Flutter n'allume pas d'émulateur Android : il exécute ton code Dart directement sur la machine virtuelle Dart de ton PC Windows !_
 >
-> _1. **Étape Red :** Tu ouvres [waiting_room_manager_test.dart](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/test/waiting_room_manager_test.dart#L22-L34) et tu écris ce que tu attends :_
+> _C'est pour ça qu'on utilise deux choses dans [`local_queue_service_test.dart`](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/test/local_queue_service_test.dart) :_
+> _1. **`sqflite_common_ffi`** : Il utilise `dart:ffi` pour charger la bibliothèque C SQLite directement sur Windows/Mac/Linux sans téléphone._
+> _2. **`openDatabase(':memory:')` (`inMemory: true`)** : Au lieu de créer un vrai fichier `.db` sur ton disque dur qui garderait les données d'un test à l'autre, SQLite crée une base ultra-rapide en RAM qui repart à zéro à chaque test :_
 >
 > ```dart
-> test('should remove the first client when nextClient() is called', () {
->   // 1. Arrange : je prépare deux clients
->   final manager = QueueProvider();
->   manager.addClient('Client A');
->   manager.addClient('Client B');
->
->   // 2. Act : j'appelle l'action
->   manager.nextClient();
->
->   // 3. Assert : je vérifie le résultat
->   expect(manager.clients.length, 1);
->   expect(manager.clients.first, 'Client B');
+> setUpAll(() {
+>   sqfliteFfiInit();
+>   databaseFactory = databaseFactoryFfi;
 > });
 > ```
->
-> _Tu lances le test : il échoue en rouge parce que `nextClient()` n'existe pas encore. C'est normal et c'est voulu !_
->
-> _2. **Étape Green :** Maintenant, tu vas dans [queue_provider.dart](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/lib/queue_provider.dart#L17-L22) et tu écris le code minimal pour que le test passe :_
->
-> ```dart
-> void nextClient() {
->   if (_clients.isNotEmpty) {
->     _clients.removeAt(0);
->     notifyListeners();
->   }
-> }
-> ```
->
-> _Tu relances `flutter test` : le test passe au vert._
->
-> _3. **Étape Refactor :** Tu vérifies que le code est propre et que tu as bien géré le cas où la liste est vide pour éviter un plantage."_
+> _Résultat : ton test s'exécute en moins d'une seconde et reste 100 % isolé."_
 
 ---
 
-### 💬 Échange 3 : L'erreur avec `context.watch()` dans un bouton
+### 💬 Échange 3 : Pourquoi stocker `null` au lieu de `(0.0, 0.0)` quand le GPS est refusé ?
 
 > **👤 Mon prompt :**  
-> _"Dans mon fichier [main.dart](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/lib/main.dart), j'ai voulu appeler `context.watch<QueueProvider>().nextClient()` quand l'utilisateur clique sur le bouton, mais Flutter m'affiche un avertissement/erreur. Pourquoi je ne peux pas utiliser watch ici ?"_
+> _"Dans [`GeolocationService`](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/lib/geolocation_service.dart), si l'utilisateur refuse la permission GPS ou si la localisation est désactivée, la méthode `getCurrentPosition()` renvoie `null`. Pourquoi on ne renvoie pas plutôt `0.0, 0.0` pour éviter d'avoir des `double?` nullables partout ?"_
 
 > **🤖 Réponse de l'IA :**  
-> _"C'est le piège le plus classique avec Provider ! Retiens cette règle simple :_
+> _"C'est une excellente remarque d'ingénierie des données ! En géolocalisation, les coordonnées `(0.0, 0.0)` existent réellement sur Terre : c'est un point précis dans l'océan Atlantique (au large du Ghana), que les développeurs appellent d'ailleurs **'Null Island'** à cause de cette erreur très fréquente._
 >
-> _- **`context.watch<QueueProvider>()` sert à écouter :** Il dit à Flutter 'Dès que les données changent, redessine ce widget'. Donc on le met uniquement dans la méthode `build()` pour afficher des choses (comme la liste ou le nombre de personnes)._
-> _- **`context.read<QueueProvider>()` sert à agir :** Il récupère ton Provider sans s'abonner aux changements. C'est lui qu'il faut utiliser dans les `onPressed` :_
+> _Si tu stockes `(0.0, 0.0)` quand le GPS échoue, ta base de données Supabase ne pourra jamais distinguer une vraie coordonnée d'une absence de donnée, et ton interface affichera `📍 0.0000, 0.0000` au lieu d'indiquer honnêtement à l'utilisateur :_
 >
 > ```dart
-> onPressed: () {
->   context.read<QueueProvider>().nextClient();
-> }
+> subtitle: Text(
+>   lat == null
+>       ? '📍 Location not captured'
+>       : '📍 ${lat.toStringAsFixed(4)}, ${lng?.toStringAsFixed(4)}',
+> ),
 > ```
->
-> _Si tu mets `watch` dans un clic de bouton, Flutter essaie de reconstruire l'écran au milieu d'un événement utilisateur, ce qui crée un conflit."_
+> _Utiliser `null` (et des colonnes `REAL` nullables dans SQLite) représente fidèlement la réalité métier."_
 
 ---
 
-### 💬 Échange 4 : Résoudre l'erreur `ProviderNotFoundException` en test de widget
+### 💬 Échange 4 : Mocker le GPS avec `Mockito` et `build_runner`
 
 > **👤 Mon prompt :**  
-> _"J'essaie de tester mon interface dans [waiting_room_widget_test.dart](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/test/waiting_room_widget_test.dart), mais le test plante tout de suite avec `ProviderNotFoundException`. Pourtant dans mon application ça marche bien. Qu'est-ce qui manque ?"_
+> _"Dans la Partie 3 du TP, on utilise `@GenerateMocks([GeolocationService])` dans [`queue_provider_geolocation_test.dart`](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/test/queue_provider_geolocation_test.dart). Comment ça marche exactement avec `build_runner` et pourquoi on doit injecter `GeolocationService` dans le constructeur de `QueueProvider` ?"_
 
 > **🤖 Réponse de l'IA :**  
-> _"Quand tu lances l'application normale, `ChangeNotifierProvider` est tout en haut dans la fonction `main()`. Mais dans un test de widget, Flutter crée un environnement complètement vide et monte uniquement le widget que tu lui donnes._
+> _"Dans un test automatisé, tu ne peux pas dépendre d'une vraie puce GPS ni demander à quelqu'un de cliquer sur 'Autoriser la localisation'. On doit donc remplacer le vrai `GeolocationService` par un **faux service contrôlé (un Mock)**._
 >
-> _Pour corriger ça, tu dois injecter le provider directement dans ton test :_
->
+> _1. **L'injection de dépendances :** Si `QueueProvider` créait lui-même `final _geoService = GeolocationService();` en dur sans paramètre de constructeur, il serait impossible de le remplacer pendant le test. En écrivant :_
 > ```dart
-> await tester.pumpWidget(
->   ChangeNotifierProvider(
->     create: (context) => QueueProvider(),
->     child: const WaitingRoomApp(),
->   ),
-> );
+> QueueProvider({GeolocationService? geoService})
+>     : _geoService = geoService ?? GeolocationService();
 > ```
+> _ton application utilise le vrai GPS en production, mais ton test peut lui passer `MockGeolocationService()` !_
 >
-> _Après avoir tapé du texte ou cliqué sur un bouton, n'oublie pas d'appeler `await tester.pump();` pour que Flutter applique les changements d'état avant de vérifier avec `expect()`."_
+> _2. **Le rôle de `build_runner` :** Quand tu lances `dart run build_runner build`, il lit l'annotation `@GenerateMocks([GeolocationService, QueueProvider])` et génère automatiquement le fichier `queue_provider_geolocation_test.mocks.dart`. Tu peux alors programmer son comportement avec `when(...).thenAnswer(...)` :_
+> ```dart
+> when(mockGeo.getCurrentPosition()).thenAnswer((_) async => mockPos);
+> ```
+> _C'est ce qui nous permet de vérifier avec certitude que `addClient('Test User')` enregistre bien `lat: 37.7749` et `lng: -122.4194`."_
 
 ---
 
-## 4. Ce que j'ai réellement compris et retenu
+## 4. Ce que j'ai réellement compris et retenu de ce TP 5
 
-Grâce à ces échanges et au travail sur le code :
-
-1. **La séparation des responsabilités :** Mon interface graphique ([main.dart](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/lib/main.dart)) ne s'occupe plus de gérer la liste ; elle ne fait que l'afficher. Toute la logique est centralisée dans [queue_provider.dart](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/lib/queue_provider.dart).
-2. **L'intérêt du TDD :** Écrire les tests avant le code oblige à bien penser à ce que la fonction doit faire et aux cas particuliers (ex : que faire si on appelle `nextClient` quand la file est vide ?).
-3. **Le réflexe `watch` vs `read` :** `watch` pour afficher les données, `read` pour déclencher les actions dans les boutons.
-4. **La fiabilité des tests :** Tous les tests unitaires et widgets passent avec succès (`8/8 tests passés`), et la CI GitHub Actions ([ci.yml](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/.github/workflows/ci.yml)) valide le projet automatiquement.
+1. **L'architecture Offline-First complète :** J'ai compris comment combiner une base locale SQLite ([`LocalQueueService`](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/lib/local_queue_service.dart)) pour la réactivité immédiate hors-ligne et une base cloud ([`QueueProvider`](file:///c:/Users/MSI/AndroidStudioProjects/Waiting_room_app/lib/queue_provider.dart) + Supabase) pour le partage en temps réel entre appareils.
+2. **L'importance des UUID côté client :** Sans connexion à Supabase, le serveur ne peut pas générer l'ID du client. Générer un `Uuid().v4()` dès l'insertion locale permet de faire un `upsert` propre vers Supabase plus tard sans créer de doublons.
+3. **La gestion défensive des capteurs matériels :** Un capteur comme le GPS peut être refusé par l'utilisateur, désactivé dans les paramètres Android/iOS ou mettre trop de temps à répondre (`timeLimit`). Le code doit toujours prévoir ces cas sans jamais faire planter l'application.
+4. **L'injection de dépendances et le Mocking :** J'ai compris concrètement pourquoi une bonne architecture (Clean Architecture) facilite les tests unitaires et les tests de widgets (`15/15 tests passés`).
 
 ---
 
 ## 5. Conclusion personnelle
 
-L'utilisation de l'IA comme tuteur m'a permis de ne pas rester bloqué sur des détails de syntaxe ou des erreurs de contexte Flutter, tout en me forçant à comprendre le fonctionnement interne de chaque outil. J'ai compris le sens des choix d'architecture demandés par le professeur au lieu de simplement appliquer une recette sans réfléchir.
+Ce Workshop 5 m'a fait passer d'une application qui fonctionne uniquement dans des conditions idéales (Wi-Fi parfait, permissions toujours acceptées) à une application mobile robuste et réaliste. L'accompagnement par l'IA m'a permis de comprendre en profondeur la mécanique de synchronisation SQLite $\leftrightarrow$ Supabase et l'utilisation professionnelle de `Mockito` et `sqflite_common_ffi` en TDD.
