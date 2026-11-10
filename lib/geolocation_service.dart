@@ -1,10 +1,19 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
 
 class GeolocationService {
+  bool get _isRunningInTest {
+    try {
+      final bindingName =
+          WidgetsFlutterBinding.ensureInitialized().runtimeType.toString();
+      return bindingName.contains('Test');
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<Position?> getCurrentPosition() async {
-    if (!kIsWeb && Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (_isRunningInTest) {
       return null;
     }
 
@@ -35,4 +44,3 @@ class GeolocationService {
     }
   }
 }
-
