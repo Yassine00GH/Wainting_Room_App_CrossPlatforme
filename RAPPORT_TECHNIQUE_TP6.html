@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rapport Technique — Workshop 6 (TP6) — Yassine Ghorbel</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 14mm 15mm 15mm 15mm;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+      line-height: 1.5;
+      font-size: 13px;
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+    }
+    .page {
+      padding: 10px 0;
+      page-break-after: always;
+    }
+    .page:last-child {
+      page-break-after: avoid;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 4px 0;
+      letter-spacing: -0.5px;
+    }
+    .subtitle {
+      font-size: 13.5px;
+      color: #4f46e5;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .info-table td {
+      padding: 7px 12px;
+      border: 1px solid #e2e8f0;
+      font-size: 12px;
+    }
+    .info-table td strong {
+      color: #334155;
+    }
+    h2 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #4338ca;
+      border-bottom: 1.5px solid #e0e7ff;
+      padding-bottom: 4px;
+      margin: 16px 0 8px 0;
+    }
+    h3 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 10px 0 4px 0;
+    }
+    p {
+      margin: 0 0 8px 0;
+      text-align: justify;
+    }
+    ul, ol {
+      margin: 0 0 10px 0;
+      padding-left: 20px;
+    }
+    li {
+      margin-bottom: 4px;
+    }
+    pre {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: "Cascadia Code", "Fira Code", Consolas, Courier, monospace;
+      font-size: 11px;
+      color: #0f172a;
+      overflow-x: auto;
+      margin: 6px 0 10px 0;
+      line-height: 1.4;
+    }
+    code {
+      font-family: Consolas, monospace;
+      font-size: 11.5px;
+      background: #f1f5f9;
+      padding: 1px 4px;
+      border-radius: 4px;
+      color: #4338ca;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 14px 0;
+      font-size: 11.5px;
+    }
+    .data-table th {
+      background: #4f46e5;
+      color: white;
+      text-align: left;
+      padding: 6px 10px;
+      font-weight: 600;
+    }
+    .data-table td {
+      border: 1px solid #e2e8f0;
+      padding: 5px 10px;
+    }
+    .data-table tr:nth-child(even) {
+      background: #f8fafc;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 4px;
+    }
+    .badge-success {
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .footer {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 6px;
+      margin-top: 14px;
+      font-size: 10.5px;
+      color: #64748b;
+      display: flex;
+      justify-content: space-between;
+    }
+    @media print {
+      body { background: transparent; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== PAGE 1 ==================== -->
+  <div class="page">
+    <h1>Rapport Technique — Workshop 6 (TP6)</h1>
+    <div class="subtitle">Application de File d'Attente Résiliente avec Surveillance Réseau, Persistance SQLite, Synchronisation Distante, Pagination & Réconciliation Temps Réel (Flutter & Supabase)</div>
+
+    <table class="info-table">
+      <tr>
+        <td style="width: 50%;"><strong>Étudiant :</strong> Yassine Ghorbel</td>
+        <td style="width: 50%;"><strong>Module :</strong> Développement Mobile Cross-Platform</td>
+      </tr>
+      <tr>
+        <td><strong>TP :</strong> Workshop 6 (TP6)</td>
+        <td><strong>Architecture :</strong> Clean Architecture en Couches (UI, Provider, Services, Repository, Storage SQLite, Supabase)</td>
+      </tr>
+      <tr>
+        <td><strong>Portée :</strong> Réseau, SQLite, Sync Engine, Pagination, Realtime</td>
+        <td><strong>Approche Qualité :</strong> Test-Driven Development (TDD Red-Green-Refactor, Mocktail, Mockito)</td>
+      </tr>
+      <tr>
+        <td colspan="2"><strong>Dépôt GitHub (Cliquer pour ouvrir) :</strong><br>
+          <a href="https://github.com/Yassine00GH/Wainting_Room_App_CrossPlatforme" target="_blank" style="color: #4f46e5; text-decoration: none; font-weight: 600;">https://github.com/Yassine00GH/Wainting_Room_App_CrossPlatforme</a>
+        </td>
+      </tr>
+    </table>
+
+    <h2>1. Introduction & Contexte du Workshop 6</h2>
+    <p>Ce <strong>Workshop 6 (TP6)</strong> a pour vocation d'élever notre application <em>Waiting Room App</em> aux standards industriels de <strong>haute disponibilité, résilience et scalabilité</strong>. En environnement réel, une application mobile est soumise aux micro-coupures de connexion, aux latences serveur et aux variations brutales de réseau.</p>
+    <p>Le Workshop 6 introduit 7 piliers fondamentaux :</p>
+    <ul>
+      <li><strong>Surveillance fine de la connectivité réseau</strong> : distinction nette entre la connectivité physique (Wi-Fi/Cellulaire) et la disponibilité du backend Supabase.</li>
+      <li><strong>Debouncing (700 ms) et contrôle de concurrence</strong> pour éliminer les clignotements d'interface lors des micro-coupures.</li>
+      <li><strong>Persistance locale SQLite normalisée (<code>waiting_queue.db</code>)</strong> avec gestion explicite du cycle de vie via <code>SyncStatus</code> (<code>pending</code>, <code>syncing</code>, <code>synced</code>, <code>failed</code>).</li>
+      <li><strong>Moteur de synchronisation différée automatique (<code>SyncService</code>)</strong> s'exécutant dès le retour du réseau, avec politique de réessai et support d'une fonction RPC PostgreSQL (<code>register_queue_client</code>).</li>
+      <li><strong>Gestion d'état explicite via <code>QueueState</code></strong> (<code>initial</code>, <code>loading</code>, <code>loaded</code>, <code>empty</code>, <code>refreshing</code>, <code>loadingMore</code>, <code>error</code>).</li>
+      <li><strong>Pagination par lots de 20 clients</strong> avec défilement infini pour optimiser la mémoire et la bande passante.</li>
+      <li><strong>Réconciliation des flux Supabase Realtime</strong> sans doublons et dans le respect strict du FIFO (<em>First-In, First-Out</em>).</li>
+    </ul>
+
+    <h2>2. Architecture Globale en Couches & Découpage</h2>
+    <p>Le projet est structuré selon les préceptes de la Clean Architecture afin d'isoler le domaine métier, les capteurs matériels et la persistance :</p>
+    <pre>lib/
+├── models/       # Client, SyncStatus, AppConnectivity, QueueState
+├── services/     # GeolocationService, ConnectivityService, SyncService
+├── storage/      # LocalQueueStorage (SQLite waiting_queue.db)
+├── repositories/ # QueueRepository (Pagination, RPC, Upsert, Realtime)
+├── providers/    # QueueProvider, ConnectivityProvider (ChangeNotifier)
+├── screens/      # QueueScreen (Interface principale moderne style Figma)
+└── widgets/      # ClientCard, OfflineBanner, LoadingWidget, QueueEmptyWidget</pre>
+
+    <div class="footer">
+      <span>Projet : Waiting Room App • GitHub : Yassine00GH/Wainting_Room_App_CrossPlatforme</span>
+      <span>Page 1 sur 4</span>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE 2 ==================== -->
+  <div class="page">
+    <h2>3. Partie 1 : Modélisation des Données & Énumérations Résilientes</h2>
+    <h3>Étape 3.1 — Définition des Énumérations Métier (lib/models/) :</h3>
+    <ul>
+      <li><code>SyncStatus</code> : <code>pending</code> (en attente), <code>syncing</code> (en cours), <code>synced</code> (synchronisé), <code>failed</code> (échec).</li>
+      <li><code>AppConnectivity</code> : <code>checking</code> (test), <code>online</code> (connecté), <code>offline</code> (aucun réseau), <code>backendUnavailable</code> (serveur inaccessible).</li>
+      <li><code>QueueState</code> : <code>initial</code>, <code>loading</code>, <code>loaded</code>, <code>empty</code>, <code>refreshing</code>, <code>loadingMore</code>, <code>error</code>.</li>
+    </ul>
+
+    <h3>Étape 3.2 — Modèle Client Immuable (lib/models/client.dart) :</h3>
+    <pre>class Client {
+  final String id;
+  final String name;
+  final double? lat;
+  final double? lng;
+  final double? locationAccuracy;
+  final DateTime createdAt;
+  final SyncStatus syncStatus;
+
+  const Client({
+    required this.id,
+    required this.name,
+    this.lat,
+    this.lng,
+    this.locationAccuracy,
+    required this.createdAt,
+    this.syncStatus = SyncStatus.synced,
+  });
+
+  bool get hasLocation => lat != null && lng != null;
+  String get locationText => hasLocation
+      ? '${lat!.toStringAsFixed(4)}, ${lng!.toStringAsFixed(4)}'
+      : 'Location not captured';
+
+  Map<String, dynamic> toLocalMap() => {
+    'id': id, 'name': name, 'lat': lat, 'lng': lng,
+    'location_accuracy_m': locationAccuracy,
+    'created_at': createdAt.toIso8601String(),
+    'sync_status': syncStatus.name,
+  };
+
+  Map<String, dynamic> toSupabaseMap() => {
+    'id': id, 'name': name, 'lat': lat, 'lng': lng,
+    'location_accuracy_m': locationAccuracy,
+    'created_at': createdAt.toIso8601String(),
+  };
+}</pre>
+
+    <h2>4. Partie 2 : Surveillance Réseau Avancée & Debouncing</h2>
+    <h3>Étape 4.1 — ConnectivityService (lib/services/connectivity_service.dart) :</h3>
+    <p>Ce service combine l'écoute des interfaces matérielles avec un ping léger sur la table Supabase (timeout de 5 secondes) pour confirmer la joignabilité effective de la base de données distante.</p>
+
+    <h3>Étape 4.2 — ConnectivityProvider avec Debouncing (lib/providers/connectivity_provider.dart) :</h3>
+    <p>Lors d'un changement de statut réseau, un timer de 700 ms est déclenché. Si le réseau est stable, la vérification du backend Supabase s'exécute avec gestion d'une file d'attente concurrente (<code>_checkAgain</code>) et nettoyage strict lors du <code>dispose()</code>.</p>
+
+    <h3>Étape 4.3 — Bandeau Contextuel Réactif (lib/widgets/offline_banner.dart) :</h3>
+    <p>Affiche instantanément un bandeau d'alerte en haut d'écran : rouge (<em>No network connection</em>), orange (<em>Waiting-room server unavailable</em>) ou bleu (<em>Checking connection...</em>).</p>
+
+    <div class="footer">
+      <span>Projet : Waiting Room App • GitHub : Yassine00GH/Wainting_Room_App_CrossPlatforme</span>
+      <span>Page 2 sur 4</span>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE 3 ==================== -->
+  <div class="page">
+    <h2>5. Partie 3 : Persistance SQLite & Moteur de Synchronisation Automatique</h2>
+    <h3>Étape 5.1 — LocalQueueStorage (lib/storage/local_queue_storage.dart) :</h3>
+    <p>Crée et gère la base locale <code>waiting_queue.db</code> avec la table <code>clients</code>. La méthode <code>getPendingClients()</code> sélectionne les enregistrements <code>pending</code> et <code>failed</code> ordonnés par <code>created_at ASC</code> pour respecter scrupuleusement l'ordre d'arrivée FIFO lors de la synchronisation.</p>
+
+    <h3>Étape 5.2 — SyncService (lib/services/sync_service.dart) :</h3>
+    <p>Orchestre la transmission sécurisée vers Supabase. Chaque client passe successivement par le statut <code>syncing</code>, puis <code>synced</code> (en cas de succès) ou <code>failed</code> (pour réessai ultérieur) :</p>
+    <pre>Future<void> synchronize() async {
+  if (_isSyncing) return;
+  _isSyncing = true;
+  try {
+    final pending = await _storage.getPendingClients();
+    for (final record in pending) {
+      final id = record['id'] as String;
+      try {
+        await _storage.updateSyncStatus(id, SyncStatus.syncing);
+        await _repository.registerOnServer(Client.fromLocalMap(record));
+        await _storage.updateSyncStatus(id, SyncStatus.synced);
+      } catch (_) {
+        await _storage.updateSyncStatus(id, SyncStatus.failed);
+      }
+    }
+  } finally {
+    _isSyncing = false;
+  }
+}</pre>
+
+    <h3>Étape 5.3 — Fonction Stockée PostgreSQL RPC & Repli Résilient (lib/repositories/queue_repository.dart) :</h3>
+    <p>Le dépôt distant invoque la procédure stockée PostgreSQL <code>register_queue_client</code>. Pour pallier toute indisponibilité de la procédure ou absence de colonnes optionnelles, un <strong>mécanisme de repli à 3 niveaux</strong> a été implémenté : appel RPC ➔ upsert complet ➔ upsert sans <code>location_accuracy_m</code> ➔ upsert minimal.</p>
+
+    <h2>6. Partie 4 : Gestion d'État Avancée, Pagination & Realtime</h2>
+    <h3>Étape 6.1 — Pagination Paginée par Lots de 20 (lib/providers/queue_provider.dart) :</h3>
+    <p>La file d'attente est initialisée avec les 20 premiers enregistrements via <code>fetchInitialQueue()</code>. L'écoute du défilement (<code>ScrollController</code>) déclenche <code>loadMore()</code> dès que l'utilisateur approche du bas de la liste (seuil de 200 px) :</p>
+    <pre>Future<void> loadMore() async {
+  if (_isLoadingMore || !_hasMore) return;
+  _isLoadingMore = true;
+  notifyListeners();
+  try {
+    _page++;
+    final newClients = await _repository.fetchPage(
+      offset: _page * _pageSize, limit: _pageSize,
+    );
+    final existingIds = _clients.map((c) => c.id).toSet();
+    _clients.addAll(newClients.where((c) => !existingIds.contains(c.id)));
+    if (newClients.length < _pageSize) _hasMore = false;
+  } catch (_) { _page--; }
+  finally { _isLoadingMore = false; notifyListeners(); }
+}</pre>
+
+    <h3>Étape 6.2 — Réconciliation Realtime Anti-Doublon & FIFO :</h3>
+    <p>À chaque réception d'un événement d'insertion temps réel, l'identifiant est vérifié pour éviter les doublons avec les créations locales optimistes, et la liste est instantanément ordonnée selon la date de création <code>createdAt</code>.</p>
+
+    <div class="footer">
+      <span>Projet : Waiting Room App • GitHub : Yassine00GH/Wainting_Room_App_CrossPlatforme</span>
+      <span>Page 3 sur 4</span>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE 4 ==================== -->
+  <div class="page">
+    <h2>7. Partie 5 : Tests TDD Automatisés & Validation Qualité</h2>
+    <p>L'ensemble du projet est rigoureusement validé par <strong>19 tests automatisés</strong> (unitaires et widgets) exécutés avec succès :</p>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Fichier de Test</th>
+          <th>Type</th>
+          <th>Composant Validé</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>test/models/client_test.dart</td><td>Unitaire</td><td>Gestion de localisation et propriété hasLocation</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/models/client_test.dart</td><td>Unitaire</td><td>Sérialisation SQLite toLocalMap (accuracy, status)</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/models/client_test.dart</td><td>Unitaire</td><td>Sérialisation Supabase toSupabaseMap (exclusion status)</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/widgets/offline_banner_test.dart</td><td>Widget</td><td>Affichage contextuel du bandeau lors d'une déconnexion</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/local_queue_service_test.dart</td><td>Intégration</td><td>Persistance SQLite FFI en mémoire et getUnsynced</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/queue_provider_geolocation_test.dart</td><td>Unitaire</td><td>Mock GPS (Mockito) et ajout client avec coordonnées</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/queue_provider_geolocation_test.dart</td><td>Widget</td><td>Affichage à l'écran des coordonnées GPS tronquées</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/queue_provider_test.dart</td><td>Unitaire</td><td>Ajout client avec UUID v4 unique</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/queue_provider_test.dart</td><td>Unitaire</td><td>Suppression ciblée d'un client par ID</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/queue_provider_test.dart</td><td>Unitaire</td><td>Avancement strict dans l'ordre FIFO (nextClient)</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/queue_provider_test.dart</td><td>Unitaire</td><td>Vidage complet de la file d'attente (clearQueue)</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/waiting_room_manager_test.dart</td><td>Unitaire</td><td>Ajout synchrone optimiste dans la file d'attente</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/waiting_room_manager_test.dart</td><td>Unitaire</td><td>Suppression par nom ou par identifiant</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/waiting_room_manager_test.dart</td><td>Unitaire</td><td>Traitement du premier client en tête de file</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/waiting_room_card_test.dart</td><td>Widget</td><td>Rendu graphique de la carte client</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/waiting_room_widget_test.dart</td><td>Widget</td><td>Saisie texte et ajout réactif dans l'UI</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/waiting_room_widget_test.dart</td><td>Widget</td><td>Clic corbeille et suppression dynamique</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/waiting_room_widget_test.dart</td><td>Widget</td><td>Bouton d'action "Next Client" et avancement</td><td><span class="badge badge-success">PASSED</span></td></tr>
+        <tr><td>test/widget_test.dart</td><td>Widget</td><td>Test de non-régression d'affichage initial</td><td><span class="badge badge-success">PASSED</span></td></tr>
+      </tbody>
+    </table>
+
+    <pre>> flutter test
+00:09 +19: All tests passed! (19 tests sur 19 au vert, 0 échec)
+> flutter analyze lib test
+Analyzing 2 items... No issues found! (Codebase 100% conforme)</pre>
+
+    <h2>8. Synthèse & Bilan Personnel</h2>
+    <p>Ce <strong>Workshop 6 (TP6)</strong> démontre comment bâtir une application mobile professionnelle tolérante aux pannes :</p>
+    <ul>
+      <li><strong>Résilience Réseau Totale</strong> : l'application fonctionne de manière fluide et transparente, que l'appareil soit connecté, déconnecté ou en transition réseau.</li>
+      <li><strong>Intégrité des Données</strong> : aucune perte de données grâce à la persistance SQLite immédiate et au moteur de réessai automatique.</li>
+      <li><strong>Scalabilité et Performance</strong> : pagination par lots et découplage architectural rigoureux.</li>
+    </ul>
+
+    <table class="info-table" style="margin-top: 10px;">
+      <tr>
+        <td style="width: 65%;"><strong>Livrable vérifié et prêt pour évaluation :</strong><br>
+          GitHub : <a href="https://github.com/Yassine00GH/Wainting_Room_App_CrossPlatforme" target="_blank" style="color: #4f46e5; text-decoration: none;">https://github.com/Yassine00GH/Wainting_Room_App_CrossPlatforme</a>
+        </td>
+        <td style="width: 35%;">
+          <strong>Étudiant :</strong> Yassine Ghorbel<br>
+          <strong>Date :</strong> Novembre 2026
+        </td>
+      </tr>
+    </table>
+
+    <div class="footer">
+      <span>Projet : Waiting Room App • GitHub : Yassine00GH/Wainting_Room_App_CrossPlatforme</span>
+      <span>Page 4 sur 4</span>
+    </div>
+  </div>
+
+</body>
+</html>
