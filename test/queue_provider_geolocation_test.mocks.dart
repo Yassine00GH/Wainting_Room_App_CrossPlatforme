@@ -5,12 +5,14 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 
 import 'dart:async' as _i3;
-import 'dart:ui' as _i6;
+import 'dart:ui' as _i8;
 
 import 'package:geolocator/geolocator.dart' as _i4;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:waiting_room_app/geolocation_service.dart' as _i2;
-import 'package:waiting_room_app/queue_provider.dart' as _i5;
+import 'package:waiting_room_app/models/client.dart' as _i6;
+import 'package:waiting_room_app/models/queue_state.dart' as _i7;
+import 'package:waiting_room_app/providers/queue_provider.dart' as _i5;
+import 'package:waiting_room_app/services/geolocation_service.dart' as _i2;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -54,24 +56,29 @@ class MockQueueProvider extends _i1.Mock implements _i5.QueueProvider {
   }
 
   @override
-  List<Map<String, dynamic>> get clients =>
+  List<_i6.Client> get clients =>
       (super.noSuchMethod(
             Invocation.getter(#clients),
-            returnValue: <Map<String, dynamic>>[],
+            returnValue: <_i6.Client>[],
           )
-          as List<Map<String, dynamic>>);
+          as List<_i6.Client>);
 
   @override
-  bool get isLoading =>
-      (super.noSuchMethod(Invocation.getter(#isLoading), returnValue: false)
+  _i7.QueueState get state =>
+      (super.noSuchMethod(
+            Invocation.getter(#state),
+            returnValue: _i7.QueueState.initial,
+          )
+          as _i7.QueueState);
+
+  @override
+  bool get hasMore =>
+      (super.noSuchMethod(Invocation.getter(#hasMore), returnValue: false)
           as bool);
 
   @override
-  bool get isSupabaseConnected =>
-      (super.noSuchMethod(
-            Invocation.getter(#isSupabaseConnected),
-            returnValue: false,
-          )
+  bool get isLoadingMore =>
+      (super.noSuchMethod(Invocation.getter(#isLoadingMore), returnValue: false)
           as bool);
 
   @override
@@ -91,18 +98,48 @@ class MockQueueProvider extends _i1.Mock implements _i5.QueueProvider {
           as bool);
 
   @override
-  _i3.Future<void> initialize() =>
+  _i3.Future<void> fetchInitialQueue() =>
       (super.noSuchMethod(
-            Invocation.method(#initialize, []),
+            Invocation.method(#fetchInitialQueue, []),
             returnValue: _i3.Future<void>.value(),
             returnValueForMissingStub: _i3.Future<void>.value(),
           )
           as _i3.Future<void>);
 
   @override
+  _i3.Future<void> loadMore() =>
+      (super.noSuchMethod(
+            Invocation.method(#loadMore, []),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  void handleRealtimeInsert(_i6.Client? client) => super.noSuchMethod(
+    Invocation.method(#handleRealtimeInsert, [client]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void handleRealtimeDelete(String? id) => super.noSuchMethod(
+    Invocation.method(#handleRealtimeDelete, [id]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   _i3.Future<void> addClient(String? name) =>
       (super.noSuchMethod(
             Invocation.method(#addClient, [name]),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
+  _i3.Future<void> deleteClient(String? id) =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteClient, [id]),
             returnValue: _i3.Future<void>.value(),
             returnValueForMissingStub: _i3.Future<void>.value(),
           )
@@ -136,29 +173,29 @@ class MockQueueProvider extends _i1.Mock implements _i5.QueueProvider {
           as _i3.Future<void>);
 
   @override
-  _i3.Future<void> syncNow() =>
+  _i3.Future<void> syncPending() =>
       (super.noSuchMethod(
-            Invocation.method(#syncNow, []),
+            Invocation.method(#syncPending, []),
             returnValue: _i3.Future<void>.value(),
             returnValueForMissingStub: _i3.Future<void>.value(),
           )
           as _i3.Future<void>);
 
   @override
-  void dispose() => super.noSuchMethod(
-    Invocation.method(#dispose, []),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void addListener(_i6.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i8.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#addListener, [listener]),
     returnValueForMissingStub: null,
   );
 
   @override
-  void removeListener(_i6.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i8.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#removeListener, [listener]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void dispose() => super.noSuchMethod(
+    Invocation.method(#dispose, []),
     returnValueForMissingStub: null,
   );
 

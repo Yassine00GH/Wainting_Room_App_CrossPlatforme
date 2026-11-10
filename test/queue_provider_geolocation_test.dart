@@ -6,6 +6,7 @@ import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 import 'package:waiting_room_app/geolocation_service.dart';
 import 'package:waiting_room_app/main.dart';
+import 'package:waiting_room_app/models/queue_state.dart';
 import 'package:waiting_room_app/queue_provider.dart';
 
 import 'queue_provider_geolocation_test.mocks.dart';
@@ -39,14 +40,16 @@ void main() {
 
   testWidgets('Displays location when available', (tester) async {
     final provider = MockQueueProvider();
+    when(provider.state).thenReturn(QueueState.loaded);
+    when(provider.isLoadingMore).thenReturn(false);
     when(provider.clients).thenReturn([
-      {
-        'id': '1',
-        'name': 'Sam',
-        'lat': 51.5074,
-        'lng': -0.1278,
-        'created_at': DateTime.now().toIso8601String(),
-      },
+      Client(
+        id: '1',
+        name: 'Sam',
+        lat: 51.5074,
+        lng: -0.1278,
+        createdAt: DateTime.now(),
+      ),
     ]);
 
     await tester.pumpWidget(
