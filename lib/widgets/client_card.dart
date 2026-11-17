@@ -4,15 +4,21 @@ import '../models/client.dart';
 class ClientCard extends StatelessWidget {
   final Client client;
   final VoidCallback? onDelete;
+  final String? contactInfo;
 
   const ClientCard({
     super.key,
     required this.client,
     this.onDelete,
+    this.contactInfo,
   });
 
   @override
   Widget build(BuildContext context) {
+    final locationLabel = client.hasLocation
+        ? 'Location available (${client.locationText})'
+        : 'Location not captured';
+
     return Card(
       elevation: 1,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -23,9 +29,9 @@ class ClientCard extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
-          client.hasLocation
-              ? 'Location available (${client.locationText})'
-              : 'Location not captured',
+          contactInfo != null
+              ? '$contactInfo\n$locationLabel'
+              : locationLabel,
         ),
         leading: CircleAvatar(
           backgroundColor: const Color(0xFFEEF2FF),

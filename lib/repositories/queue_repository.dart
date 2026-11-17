@@ -6,6 +6,8 @@ class QueueRepository {
 
   QueueRepository(this._supabase);
 
+  bool get isConfigured => _supabase != null;
+
   Future<Client> registerOnServer(Client client) async {
     if (_supabase == null) {
       throw Exception('Supabase client is not available');

@@ -2,16 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'providers/auth_provider.dart';
 import 'providers/connectivity_provider.dart';
 import 'providers/queue_provider.dart';
+import 'repositories/auth_repository.dart';
 import 'repositories/queue_repository.dart';
+import 'screens/auth_screen.dart';
+import 'screens/client_queue_screen.dart';
 import 'screens/queue_screen.dart';
 import 'services/connectivity_service.dart';
 import 'services/geolocation_service.dart';
 import 'services/sync_service.dart';
 import 'storage/local_queue_storage.dart';
 
+export 'screens/auth_screen.dart';
+export 'screens/client_queue_screen.dart';
 export 'screens/queue_screen.dart';
+export 'providers/auth_provider.dart';
 export 'providers/queue_provider.dart';
 
 typedef WaitingRoomScreen = QueueScreen;
@@ -54,6 +61,8 @@ Future<void> main() async {
   final storage = LocalQueueStorage();
   final repository = QueueRepository(supabaseClient);
   final syncService = SyncService(storage, repository);
+  final authRepository = AuthRepository(supabaseClient, storage);
+  final authProvider = AuthProvider(authRepository);
 
   final queueProvider = QueueProvider(
     repository: repository,
@@ -71,6 +80,7 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider.value(value: connectivityProvider),
         ChangeNotifierProvider.value(value: queueProvider),
+        ChangeNotifierProvider.value(value: authProvider),
       ],
       child: WaitingRoomApp(isSupabaseConfigured: isSupabaseConfigured),
     ),
@@ -83,6 +93,20 @@ class WaitingRoomApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider?>(context);
+
+    Widget homeScreen;
+    if (auth == null) {
+      // Compatibilité tests widget existants
+      homeScreen = const QueueScreen();
+    } else if (!auth.isAuthenticated) {
+      homeScreen = const AuthScreen();
+    } else if (auth.isAdmin) {
+      homeScreen = const QueueScreen();
+    } else {
+      homeScreen = const ClientQueueScreen();
+    }
+
     return MaterialApp(
       title: 'Waiting Room Pro',
       debugShowCheckedModeBanner: false,
@@ -108,7 +132,7 @@ class WaitingRoomApp extends StatelessWidget {
           iconTheme: IconThemeData(color: Color(0xFF0F172A)),
         ),
       ),
-      home: const QueueScreen(),
+      home: homeScreen,
     );
   }
 }

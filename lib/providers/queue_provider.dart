@@ -58,12 +58,38 @@ class QueueProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      if (!_repository.isConfigured) {
+        if (_storage != null) {
+          final localData = await _storage.getClients();
+          _clients.clear();
+          _clients.addAll(localData.map(Client.fromLocalMap));
+          _clients.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        }
+        _state = _clients.isEmpty ? QueueState.empty : QueueState.loaded;
+        _hasMore = false;
+        return;
+      }
+
       final data = await _repository.fetchPage(
         offset: 0,
         limit: _pageSize,
       );
       _clients.clear();
       _clients.addAll(data);
+
+      // Conserver les enregistrements locaux en attente de synchronisation
+      if (_storage != null) {
+        final pendingData = await _storage.getPendingClients();
+        final remoteIds = _clients.map((c) => c.id).toSet();
+        for (final row in pendingData) {
+          final localClient = Client.fromLocalMap(row);
+          if (!remoteIds.contains(localClient.id)) {
+            _clients.add(localClient);
+          }
+        }
+        _clients.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      }
+
       _state = _clients.isEmpty ? QueueState.empty : QueueState.loaded;
       if (data.length < _pageSize) _hasMore = false;
     } catch (e) {
@@ -72,6 +98,7 @@ class QueueProvider extends ChangeNotifier {
         if (localData.isNotEmpty) {
           _clients.clear();
           _clients.addAll(localData.map(Client.fromLocalMap));
+          _clients.sort((a, b) => a.createdAt.compareTo(b.createdAt));
           _state = QueueState.loaded;
           notifyListeners();
           return;
